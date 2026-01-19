@@ -1,32 +1,62 @@
 package frame
 
 import (
-	"log"
 	"net/http"
 )
 
+type RouterGroup struct {
+	prefix      string
+	middlewares []HandlerFunc
+	parent      *RouterGroup
+	engine      *Engine
+}
+
 type Engine struct {
-	router Router
+	groups map[string]*RouterGroup
+	router *Router
+	*RouterGroup
 }
 
 func NewEngine() *Engine {
-	return &Engine{router: NewRouter()}
+	e := &Engine{
+		RouterGroup: &RouterGroup{},
+		groups:      make(map[string]*RouterGroup),
+		router:      NewRouter(),
+	}
+	e.RouterGroup.engine = e
+	return e
 }
 
-func (e *Engine) Get(api string, handler HandlerFunc) {
-	e.router.addRoute("GET", api, handler)
+func NewGroup(name string, parent *RouterGroup) *RouterGroup {
+	return &RouterGroup{
+		prefix:      name,
+		middlewares: make([]HandlerFunc, 0),
+		parent:      parent,
+		engine:      parent.engine,
+	}
 }
 
-func (e *Engine) Post(api string, handler HandlerFunc) {
-	e.router.addRoute("POST", api, handler)
+func (r *RouterGroup) Group(name string) *RouterGroup {
+	child := NewGroup(r.prefix+name, r)
+	e := r.engine
+	e.groups[child.prefix] = child
+	return child
 }
 
-func (e *Engine) Patch(api string, handler HandlerFunc) {
-	e.router.addRoute("PATCH", api, handler)
+func (r *RouterGroup) Get(api string, handler HandlerFunc) {
+	r.engine.router.addRoute("GET", r.prefix+api, handler)
 }
 
-func (e *Engine) Delete(api string, handler HandlerFunc) {
-	e.router.addRoute("DELETE", api, handler)
+func (r *RouterGroup) Post(api string, handler HandlerFunc) {
+	r.engine.router.addRoute("POST", r.prefix+api, handler)
+}
+
+func (r *RouterGroup) Patch(api string, handler HandlerFunc) {
+	r.engine.router.addRoute("PATCH", r.prefix+api, handler)
+}
+
+func (r *RouterGroup) Delete(api string, handler HandlerFunc) {
+	r.engine.router.addRoute("DELETE", r.prefix+api, handler)
 }
 
 func (e *Engine) Run(port string) error {
@@ -39,8 +69,5 @@ func (e *Engine) Run(port string) error {
 
 func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := NewContext(w, r)
-	err := e.router.handle(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
+	e.router.handle(ctx)
 }
