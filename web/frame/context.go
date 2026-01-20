@@ -61,13 +61,23 @@ func (c *Context) Printf(format string, a ...any) error {
 	return nil
 }
 
+func (c *Context) String(code int, format string, a ...any) {
+	c.SetHeader("Context-Type", "text/plain")
+	c.SetStatus(code)
+	fmt.Fprintf(c.Writer, format, a...)
+}
+
 // html context
 func (c *Context) HTML(code int, name string, data any) {
 	c.SetHeader("Context-Type", "text/html")
 	if err := c.engine.templates.ExecuteTemplate(c.Writer, name, data); err != nil {
-		c.SetStatus(http.StatusInternalServerError)
+		c.Fail()
 		return
 	}
+}
+
+func (c *Context) Fail() {
+	c.SetStatus(http.StatusInternalServerError)
 }
 
 // json context
@@ -79,7 +89,7 @@ func (c *Context) JSON(code int, obj any) {
 	err := encoder.Encode(obj)
 	if err != nil {
 		c.SetHeader("Context-Type", "text/plain")
-		c.SetStatus(http.StatusInternalServerError)
+		c.Fail()
 		fmt.Fprintf(c.Writer, "json encoding error: %v", err)
 		return
 	}

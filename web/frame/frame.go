@@ -28,7 +28,7 @@ func NewEngine() *Engine {
 		router:      NewRouter(),
 	}
 	e.RouterGroup.engine = e
-	e.RouterGroup.middlewares = make([]HandlerFunc, 0)
+	e.RouterGroup.middlewares = []HandlerFunc{Recovery}
 	return e
 }
 

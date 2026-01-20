@@ -21,10 +21,10 @@ func main() {
 	e.LoadHTMLGlob("./template/*")
 
 	e.Get("/", func(ctx *frame.Context) {
-		ctx.HTML(http.StatusOK, "css.tmpl", nil)
+		ctx.HTML(http.StatusOK, "css.go.tmpl", nil)
 	})
 	e.Get("/date", func(ctx *frame.Context) {
-		ctx.HTML(http.StatusOK, "custom_func.tmpl", map[string]any{
+		ctx.HTML(http.StatusOK, "custom_func.go.tmpl", map[string]any{
 			"title": "date",
 			"now":   time.Now(),
 		})
@@ -35,10 +35,15 @@ func main() {
 		Age  int
 	}
 	e.Get("/students", func(ctx *frame.Context) {
-		ctx.HTML(http.StatusOK, "arr.tmpl", map[string]any{
+		ctx.HTML(http.StatusOK, "arr.go.tmpl", map[string]any{
 			"title":  "students",
 			"stuArr": []*student{{"ming", 12}, {"yuan", 15}},
 		})
+	})
+
+	e.Get("/panic", func(c *frame.Context) {
+		names := []string{"geektutu"}
+		c.String(http.StatusOK, "%s", names[100])
 	})
 
 	g1 := e.Group("/v1")
