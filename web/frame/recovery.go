@@ -9,7 +9,7 @@ import (
 
 func stackTrace(message string) string {
 	var pcs [32]uintptr
-	n := runtime.Callers(5, pcs[:])
+	n := runtime.Callers(3, pcs[:])
 
 	var str strings.Builder
 	str.WriteString(message + "\nTraceback:")
