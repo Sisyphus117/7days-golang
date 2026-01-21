@@ -53,19 +53,3 @@ func (s Slice[T]) String() string {
 	buf.WriteByte(']')
 	return buf.String()
 }
-
-type ByteView struct {
-	b []byte
-}
-
-func (v ByteView) Len() int {
-	return len(v.b)
-}
-
-func (v ByteView) String() string {
-	return string(v.b)
-}
-
-func (v ByteView) ByteSlice() []byte {
-	return bytes.Clone(v.b)
-}

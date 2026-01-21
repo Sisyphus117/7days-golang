@@ -4,10 +4,11 @@ import "container/list"
 
 type LRU struct {
 	//maxBytes==0 for no limit
-	maxBytes int64
-	nbytes   int64
-	ll       *list.List
-	cache    map[string]*list.Element
+	maxBytes  int64
+	nbytes    int64
+	ll        *list.List
+	cache     map[string]*list.Element
+	onEvicted func(key string, value Value)
 }
 
 type entry struct {
@@ -19,12 +20,13 @@ type Value interface {
 	Len() int
 }
 
-func NewLRU(maxBytes int64) *LRU {
+func NewLRU(maxBytes int64, onEvicted func(key string, value Value)) *LRU {
 	return &LRU{
-		maxBytes: maxBytes,
-		nbytes:   0,
-		ll:       list.New(),
-		cache:    make(map[string]*list.Element),
+		maxBytes:  maxBytes,
+		nbytes:    0,
+		ll:        list.New(),
+		cache:     make(map[string]*list.Element),
+		onEvicted: onEvicted,
 	}
 }
 
@@ -52,10 +54,15 @@ func (r *LRU) RemoveOldest() {
 		return
 	}
 
-	key := elem.Value.(*entry).key
+	entry := elem.Value.(*entry)
+	key := entry.key
+	value := entry.value
 	delete(r.cache, key)
-	r.nbytes -= elem.Value.(*entry).calcMemo()
+	r.nbytes -= entry.calcMemo()
 	r.ll.Remove(elem)
+	if r.onEvicted != nil {
+		r.onEvicted(key, value)
+	}
 }
 
 func (r *LRU) Add(key string, value Value) {
