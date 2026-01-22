@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"cache/cache/cachepb"
 	"cache/cache/consthash"
 	"fmt"
 	"io"
@@ -73,23 +74,24 @@ func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (h *HTTPGetter) Get(group, key string) ([]byte, error) {
-	u := fmt.Sprintf("%v%v/%v", h.baseUrl, url.QueryEscape(group), url.QueryEscape(key))
+func (h *HTTPGetter) Get(in *cachepb.Request, out *cachepb.Response) error {
+	u := fmt.Sprintf("%v%v/%v", h.baseUrl, url.QueryEscape(in.Group), url.QueryEscape(in.Key))
 	res, err := http.Get(u)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server error, status code: %d", res.StatusCode)
+		return fmt.Errorf("server error, status code: %d", res.StatusCode)
 	}
 
 	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return bytes, nil
+	out.Value = bytes
+	return nil
 }
 
 func (p *HTTPPool) Set(peers ...string) {

@@ -1,12 +1,17 @@
 package cache
 
-import "sync"
+import (
+	"cache/cache/cachepb"
+	"cache/cache/singleflight"
+	"sync"
+)
 
 type Group struct {
 	name   string
 	cache  *cache
 	getter Getter
 	peers  PeerPicker
+	single *singleflight.Group
 }
 
 var (
@@ -37,6 +42,7 @@ func NewGroup(name string, bytes int64, getter Getter) *Group {
 			bytes: bytes,
 		},
 		getter: getter,
+		single: singleflight.NewGroup(),
 	}
 
 	groups[name] = g
@@ -69,15 +75,22 @@ func (g *Group) Get(key string) (ByteView, error) {
 }
 
 func (g *Group) load(key string) (ByteView, error) {
-	if g.peers != nil {
-		if peer, ok := g.peers.PickPeer(key); ok {
-			value, err := g.getFromPeer(peer, key)
-			if err == nil {
-				return value, nil
+	fn := func() (any, error) {
+		if g.peers != nil {
+			if peer, ok := g.peers.PickPeer(key); ok {
+				value, err := g.getFromPeer(peer, key)
+				if err == nil {
+					return value, nil
+				}
 			}
 		}
+		return g.cache.get(key)
 	}
-	return g.cache.get(key)
+	bw, err := g.single.Call(key, fn)
+	if err != nil {
+		return ByteView{}, err
+	}
+	return bw.(ByteView), nil
 }
 
 func (g *Group) getLocal(key string) ([]byte, error) {
@@ -98,9 +111,14 @@ func (g *Group) RegisterPeers(peers PeerPicker) {
 }
 
 func (g *Group) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
-	v, err := peer.Get(g.name, key)
+	req := &cachepb.Request{
+		Group: g.name,
+		Key:   key,
+	}
+	res := &cachepb.Response{}
+	err := peer.Get(req, res)
 	if err != nil {
 		return NewByteView(nil), err
 	}
-	return NewByteView(v), nil
+	return NewByteView(res.Value), nil
 }
