@@ -2,6 +2,7 @@ package orm
 
 import (
 	"database/sql"
+	"fmt"
 	"orm/dialect"
 	"orm/log"
 	"orm/session"
@@ -24,7 +25,13 @@ func NewEngine(driver, url string) (*Engine, error) {
 		return nil, err
 	}
 
-	e := &Engine{db: db}
+	dial, ok := dialect.Get(driver)
+	if !ok {
+		log.Errorf("cannot find dialect of %s", driver)
+		return nil, fmt.Errorf("cannot find dialect of %s", driver)
+	}
+
+	e := &Engine{db: db, dialect: dial}
 	log.Info("Connect to database successfully")
 	return e, nil
 }

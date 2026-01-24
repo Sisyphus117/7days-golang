@@ -9,7 +9,7 @@ import (
 )
 
 func (s *Session) Model(val any) *Session {
-	if s.schema == nil || reflect.TypeOf(val) != reflect.TypeOf(s.schema) {
+	if s.schema == nil || reflect.TypeOf(val) != reflect.TypeFor[*schema.Schema]() {
 		s.schema = schema.Parse(s.dialect, val)
 	}
 	return s
