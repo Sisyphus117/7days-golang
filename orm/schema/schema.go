@@ -15,7 +15,7 @@ type Field struct {
 type Schema struct {
 	Name       string
 	Model      any
-	fieldsName []string
+	fieldNames []string
 	fields     []*Field
 	fieldsMap  map[string]*Field
 }
@@ -33,7 +33,7 @@ func Parse(dialect dialect.Dialect, model any) *Schema {
 	s := &Schema{
 		Model:      model,
 		Name:       modelType.Name(),
-		fieldsName: make([]string, 0),
+		fieldNames: make([]string, 0),
 		fields:     make([]*Field, 0),
 		fieldsMap:  map[string]*Field{},
 	}
@@ -49,7 +49,7 @@ func Parse(dialect dialect.Dialect, model any) *Schema {
 				field.Tag = v
 			}
 			s.fields = append(s.fields, field)
-			s.fieldsName = append(s.fieldsName, p.Name)
+			s.fieldNames = append(s.fieldNames, p.Name)
 			s.fieldsMap[p.Name] = field
 		}
 	}
@@ -60,8 +60,8 @@ func (s *Schema) Fields() []*Field {
 	return s.fields
 }
 
-func (s *Schema) FieldsName() []string {
-	return s.fieldsName
+func (s *Schema) FieldNames() []string {
+	return s.fieldNames
 }
 
 func (s *Schema) RecordValues(dest any) []any {

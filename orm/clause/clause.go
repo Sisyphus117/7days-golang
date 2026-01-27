@@ -6,11 +6,14 @@ type Type int
 
 const (
 	INSERT Type = iota
+	UPDATE
+	DELETE
 	VALUES
 	SELECT
 	WHERE
 	LIMIT
 	ORDERBY
+	COUNT
 )
 
 type Clause struct {
